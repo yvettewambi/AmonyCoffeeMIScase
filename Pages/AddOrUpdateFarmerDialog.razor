@@ -1,0 +1,28 @@
+<MudDialog>
+    <DialogContent>
+        <MudTextField T="string" Label="Name" @bind-Value="farmer.Name" />
+        <MudTextField T="int" Label="Age" @bind-Value="farmer.Age" />
+        <MudTextField T="string" Label="Location" @bind-Value="farmer.Location" Lines=1/>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public Farmer farmer { get; set; } = new Farmer();
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Submit()
+    {
+        MudDialog.Close(DialogResult.Ok<Farmer>(farmer));
+    }
+
+}

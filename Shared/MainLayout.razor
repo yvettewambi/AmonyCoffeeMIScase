@@ -1,0 +1,53 @@
+﻿@inherits LayoutComponentBase
+
+<PageTitle>AmonyCoffeeMIS</PageTitle>
+
+<MudThemeProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+@*<MudLayout>
+    <MudAppBar Color="Color.Primary">
+        <MudText Typo="Typo.h4">Cakes Wold</MudText>
+    </MudAppBar>
+    <MudMainContent class="mt-4">
+        @Body
+    </MudMainContent>
+</MudLayout>*@
+
+
+<MudLayout>
+    <MudAppBar Color="Color.Primary" Fixed="true" Dense="true">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" Color="Color.Inherit" Edge="Edge.Start" @onclick="ToggleDrawer" />
+        <MudSpacer />
+
+        
+    </MudAppBar>
+    <MudDrawer @bind-Open="@Open" Elevation="1" ClipMode="DrawerClipMode.Always">
+        <MudNavMenu Bordered="true" Dense="false" Margin="Margin.Dense" Color="Color.Secondary">
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Filled.Home" IconColor="Color.Inherit" Href="/">Farmers</MudNavLink>
+
+        </MudNavMenu>
+    </MudDrawer>
+    <MudMainContent>
+        <MudContainer MaxWidth="MaxWidth.ExtraExtraLarge" Class="my-6">@Body</MudContainer>
+    </MudMainContent>
+    <MudScrollToTop>
+        <MudFab Color="Color.Primary" Icon="@Icons.Filled.KeyboardArrowUp" Title="Scroll to top" />
+    </MudScrollToTop>
+</MudLayout>
+
+@code {
+    private MudThemeProvider? _mudThemeProvider;
+
+    private bool IsDarkMode { get; set; }
+    private bool Open { get; set; } = true;
+    private bool MovieExpanded { get; set; } = true;
+
+    private void ToggleDrawer()
+    {
+        Open = !Open;
+    }
+
+
+}

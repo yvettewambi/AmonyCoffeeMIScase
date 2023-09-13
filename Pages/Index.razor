@@ -1,0 +1,123 @@
+﻿@page "/"
+@inject AppDbContext _myworldDbContext;
+@inject IDialogService _dialogService;
+
+<MudPaper Class="pa-1 my-2" Elevation="0" Height="80px">
+    <PageTitle>Farmers</PageTitle>
+
+    <div class="headings">
+
+        <div class="position-absolute top-0 end-0">
+            <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary" @onclick="(e => CreateAsync())">Add Farmer</MudButton>
+        </div>
+    </div>
+</MudPaper>
+
+
+    <MudTable Items="@allFarmers" Hover="true" Bordered="true" Virtualize="true" AllowUnsorted="false"
+              HorizontalScrollbar="true" OnRowClick="RowClickEvent" T="Farmer">
+        <HeaderContent>
+            <MudTh Style="text-align:center">
+                <MudTableSortLabel SortBy="Filter(m => m.Id)">Farmer Id</MudTableSortLabel>
+            </MudTh>
+            <MudTh>
+                <MudTableSortLabel SortBy="Filter(m => m.Name)">Name</MudTableSortLabel>
+            </MudTh>
+            <MudTh Style="text-align:right">
+                <MudTableSortLabel SortBy="Filter(m => m.Age)">Age</MudTableSortLabel>
+            </MudTh>
+            <MudTh>
+                <MudTableSortLabel SortBy="Filter(m => m.Location)">Location</MudTableSortLabel>
+            </MudTh>
+            <MudTh Style="text-align:center">
+                <MudTableSortLabel SortBy="Filter(m => m.Id)">Actions</MudTableSortLabel>
+            </MudTh>
+        </HeaderContent>
+        <RowTemplate>
+         <MudTd DataLabel="FarmerId" Style="text-align:center">@context.Id</MudTd>
+            <MudTd DataLabel="Name">@context.Name</MudTd>
+            <MudTd DataLabel="Age" Style="text-align:right">@context.Age</MudTd>
+            <MudTd DataLabel="Location">@context.Location</MudTd>
+            <MudTd DataLabel="Actions" Style="text-align:center">
+                <MudIconButton Style="padding:0" Icon="@Icons.Filled.Edit" Color="Color.Primary" @onclick="(e => UpdateAsync(context.Id))" />
+                <MudIconButton Style="padding:0" Icon="@Icons.Filled.Delete" Color="Color.Error" @onclick="(e => DeleteAsync(context.Id))" />
+            </MudTd>
+        </RowTemplate>
+        <PagerContent>
+            <MudTablePager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
+        </PagerContent>
+    </MudTable>
+
+
+@code {
+    List<Farmer> allFarmers = new List<Farmer>();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        allFarmers = await _myworldDbContext.Farmer.ToListAsync();
+    }
+
+    private async Task CreateAsync()
+    {
+        var parameters = new DialogParameters();
+        parameters.Add("farmer", new Farmer());
+        var dialog = await _dialogService.Show<AddOrUpdateFarmerDialog>("Create A Item", parameters).Result;
+
+        if (dialog.Data != null)
+        {
+            Farmer newFarmer = dialog.Data as Farmer;
+            _myworldDbContext.Farmer.Add(newFarmer);
+            await _myworldDbContext.SaveChangesAsync();
+
+
+            allFarmers.Insert(0, newFarmer);
+        }
+    }
+
+    private async Task UpdateAsync(int id)
+    {
+        var parameters = new DialogParameters();
+        var farmerNeedToUpdate = allFarmers.FirstOrDefault(_ => _.Id == id);
+        parameters.Add("farmer", farmerNeedToUpdate);
+        var dialog = await _dialogService.Show<AddOrUpdateFarmerDialog>("Update A Item", parameters).Result;
+        if (dialog.Data != null)
+        {
+            var updatedFarmer = dialog.Data as Farmer;
+            _myworldDbContext.Farmer.Update(updatedFarmer);
+            await _myworldDbContext.SaveChangesAsync();
+
+            allFarmers.Remove(farmerNeedToUpdate);
+            allFarmers.Insert(0, updatedFarmer);
+        }
+    }
+
+    private async Task DeleteAsync(int id)
+    {
+        bool? result = await _dialogService.ShowMessageBox(
+        "Delete Confirmation",
+        "Deleting can not be undone!",
+        yesText: "Delete!", cancelText: "Cancel");
+
+        if (result ?? false)
+        {
+            var farmerToRemove = await _myworldDbContext.Farmer.FindAsync(id);
+            _myworldDbContext.Farmer.Remove(farmerToRemove);
+            await _myworldDbContext.SaveChangesAsync();
+
+            allFarmers.Remove(farmerToRemove);
+        }
+    }
+
+
+
+        private void RowClickEvent(TableRowClickEventArgs<Farmer> e)
+        {
+            Console.WriteLine(e.Item);
+        }
+
+        private Func<Farmer, object?> Filter(Func<Farmer, object?> selector)
+        {
+            return new Func<Farmer, object?>(selector);
+        }
+}
