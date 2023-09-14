@@ -3,7 +3,7 @@
 <PageTitle>AmonyCoffeeMIS</PageTitle>
 
 <MudThemeProvider />
-<MudDialogProvider />
+<MudDialogProvider MaxWidth="MaxWidth.Medium" FullWidth="true" />
 <MudSnackbarProvider />
 
 @*<MudLayout>
@@ -26,7 +26,7 @@
     <MudDrawer @bind-Open="@Open" Elevation="1" ClipMode="DrawerClipMode.Always">
         <MudNavMenu Bordered="true" Dense="false" Margin="Margin.Dense" Color="Color.Secondary">
             <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Filled.Home" IconColor="Color.Inherit" Href="/">Farmers</MudNavLink>
-
+            <MudNavLink Match="NavLinkMatch.All" Icon="@Icons.Filled.ShoppingCart" IconColor="Color.Inherit" Href="/Deliveries">Deliveries</MudNavLink>
         </MudNavMenu>
     </MudDrawer>
     <MudMainContent>
@@ -38,7 +38,7 @@
 </MudLayout>
 
 @code {
-    private MudThemeProvider? _mudThemeProvider;
+    // private MudThemeProvider? _mudThemeProvider;
 
     private bool IsDarkMode { get; set; }
     private bool Open { get; set; } = true;

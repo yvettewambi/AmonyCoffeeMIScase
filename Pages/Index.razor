@@ -1,52 +1,74 @@
 ﻿@page "/"
-@inject AppDbContext _myworldDbContext;
+@inject AppDbContext _dbContext;
 @inject IDialogService _dialogService;
+@inject NavigationManager _navigationManager;
 
-<MudPaper Class="pa-1 my-2" Elevation="0" Height="80px">
-    <PageTitle>Farmers</PageTitle>
+<PageTitle>Farmers</PageTitle>
 
-    <div class="headings">
+<MudPaper Class="pa-1 my-2" Elevation="0">
+    
 
+    <div class="headings mb-2">
+        <h1>
+            Farmers
+        </h1>
         <div class="position-absolute top-0 end-0">
             <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary" @onclick="(e => CreateAsync())">Add Farmer</MudButton>
         </div>
     </div>
-</MudPaper>
-
 
     <MudTable Items="@allFarmers" Hover="true" Bordered="true" Virtualize="true" AllowUnsorted="false"
               HorizontalScrollbar="true" OnRowClick="RowClickEvent" T="Farmer">
         <HeaderContent>
-            <MudTh Style="text-align:center">
+            <MudTh>
                 <MudTableSortLabel SortBy="Filter(m => m.Id)">Farmer Id</MudTableSortLabel>
             </MudTh>
             <MudTh>
                 <MudTableSortLabel SortBy="Filter(m => m.Name)">Name</MudTableSortLabel>
             </MudTh>
-            <MudTh Style="text-align:right">
-                <MudTableSortLabel SortBy="Filter(m => m.Age)">Age</MudTableSortLabel>
+            <MudTh>
+                <MudTableSortLabel SortBy="Filter(m => m.Gender)">Gender</MudTableSortLabel>
+            </MudTh>
+            <MudTh>
+                <MudTableSortLabel SortBy="Filter(m => m.Age)">@nameof(Farmer.Age)</MudTableSortLabel>
             </MudTh>
             <MudTh>
                 <MudTableSortLabel SortBy="Filter(m => m.Location)">Location</MudTableSortLabel>
             </MudTh>
-            <MudTh Style="text-align:center">
+            <MudTh>
                 <MudTableSortLabel SortBy="Filter(m => m.Id)">Actions</MudTableSortLabel>
             </MudTh>
         </HeaderContent>
         <RowTemplate>
-         <MudTd DataLabel="FarmerId" Style="text-align:center">@context.Id</MudTd>
+            <MudTd DataLabel="FarmerId" Style="text-align:center">@context.Id</MudTd>
             <MudTd DataLabel="Name">@context.Name</MudTd>
-            <MudTd DataLabel="Age" Style="text-align:right">@context.Age</MudTd>
+            <MudTd DataLabel="Gender">@context.Gender</MudTd>
+            <MudTd DataLabel="@nameof(Farmer.Age)" Style="text-align:right">
+                @context.Age
+            </MudTd>
             <MudTd DataLabel="Location">@context.Location</MudTd>
-            <MudTd DataLabel="Actions" Style="text-align:center">
-                <MudIconButton Style="padding:0" Icon="@Icons.Filled.Edit" Color="Color.Primary" @onclick="(e => UpdateAsync(context.Id))" />
-                <MudIconButton Style="padding:0" Icon="@Icons.Filled.Delete" Color="Color.Error" @onclick="(e => DeleteAsync(context.Id))" />
+            <MudTd DataLabel="Actions">
+                <MudGrid>
+                    <MudItem>
+                        <MudIconButton Style="padding:0" Icon="@Icons.Filled.AddShoppingCart" Color="Color.Secondary" @onclick="(e => AddDelivery(context.Id))" />
+                    </MudItem>
+                    <MudItem>
+                        <MudIconButton Style="padding:0" Icon="@Icons.Filled.Edit" Color="Color.Primary" @onclick="(e => UpdateAsync(context.Id))" />
+                    </MudItem>
+                    <MudItem>
+                        <MudIconButton Style="padding:0" Icon="@Icons.Filled.Delete" Color="Color.Error" @onclick="(e => DeleteAsync(context.Id))" />
+                    </MudItem>
+                </MudGrid>
             </MudTd>
         </RowTemplate>
         <PagerContent>
             <MudTablePager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
         </PagerContent>
     </MudTable>
+
+    @* <MudFab Color="Color.Secondary" Icon="@Icons.Filled.Add" class="object-right-bottom" Size="Size.Medium" /> *@
+</MudPaper>
+    
 
 
 @code {
@@ -55,20 +77,20 @@
 
     protected override async Task OnInitializedAsync()
     {
-        allFarmers = await _myworldDbContext.Farmer.ToListAsync();
+        allFarmers = await _dbContext.Farmer.ToListAsync();
     }
 
     private async Task CreateAsync()
     {
         var parameters = new DialogParameters();
         parameters.Add("farmer", new Farmer());
-        var dialog = await _dialogService.Show<AddOrUpdateFarmerDialog>("Create A Item", parameters).Result;
+        var dialog = await OpenDialog<AddOrUpdateFarmerDialog>("Create Farmer", parameters); // await _dialogService.Show<AddOrUpdateFarmerDialog>("Create A Item", parameters).Result;
 
         if (dialog.Data != null)
         {
             Farmer newFarmer = dialog.Data as Farmer;
-            _myworldDbContext.Farmer.Add(newFarmer);
-            await _myworldDbContext.SaveChangesAsync();
+            _dbContext.Farmer.Add(newFarmer);
+            await _dbContext.SaveChangesAsync();
 
 
             allFarmers.Insert(0, newFarmer);
@@ -80,12 +102,12 @@
         var parameters = new DialogParameters();
         var farmerNeedToUpdate = allFarmers.FirstOrDefault(_ => _.Id == id);
         parameters.Add("farmer", farmerNeedToUpdate);
-        var dialog = await _dialogService.Show<AddOrUpdateFarmerDialog>("Update A Item", parameters).Result;
+        var dialog = await OpenDialog<AddOrUpdateFarmerDialog>("Update Farmer", parameters); // _dialogService.Show<AddOrUpdateFarmerDialog>("Update A Item", parameters).Result;
         if (dialog.Data != null)
         {
             var updatedFarmer = dialog.Data as Farmer;
-            _myworldDbContext.Farmer.Update(updatedFarmer);
-            await _myworldDbContext.SaveChangesAsync();
+            _dbContext.Farmer.Update(updatedFarmer);
+            await _dbContext.SaveChangesAsync();
 
             allFarmers.Remove(farmerNeedToUpdate);
             allFarmers.Insert(0, updatedFarmer);
@@ -94,30 +116,54 @@
 
     private async Task DeleteAsync(int id)
     {
-        bool? result = await _dialogService.ShowMessageBox(
-        "Delete Confirmation",
-        "Deleting can not be undone!",
-        yesText: "Delete!", cancelText: "Cancel");
+        bool? result = await _dialogService.ShowMessageBox("Delete Confirmation",
+            "Deleting can not be undone!", yesText: "Delete!", cancelText: "Cancel");
 
         if (result ?? false)
         {
-            var farmerToRemove = await _myworldDbContext.Farmer.FindAsync(id);
-            _myworldDbContext.Farmer.Remove(farmerToRemove);
-            await _myworldDbContext.SaveChangesAsync();
+            var farmerToRemove = await _dbContext.Farmer.FindAsync(id);
+            _dbContext.Farmer.Remove(farmerToRemove);
+            await _dbContext.SaveChangesAsync();
 
             allFarmers.Remove(farmerToRemove);
         }
     }
 
+    private async Task AddDelivery(int farmerId)
+    {
+        var paremeters = new DialogParameters();
+        paremeters.Add(nameof(Delivery), new Delivery
+            {
+                FarmerId = farmerId
+            });
 
+        var dialog = await OpenDialog<AddUpdateDeliveryDialog>("Add Delivery", paremeters);
 
-        private void RowClickEvent(TableRowClickEventArgs<Farmer> e)
+        if(dialog.Data != null)
         {
-            Console.WriteLine(e.Item);
-        }
+            Delivery delivery = dialog.Data as Delivery;
+            _dbContext.Deliveries.Add(delivery);
 
-        private Func<Farmer, object?> Filter(Func<Farmer, object?> selector)
-        {
-            return new Func<Farmer, object?>(selector);
+            await _dbContext.SaveChangesAsync();
         }
+    }
+
+    private async Task<DialogResult> OpenDialog<T>(string title, DialogParameters? parameters) where T: ComponentBase
+    {
+        var dialog = await _dialogService.Show<T>(title, parameters).Result;
+
+        return dialog;
+    }
+
+    private void RowClickEvent(TableRowClickEventArgs<Farmer> e)
+    {
+        Console.WriteLine(e.Item);
+
+        _navigationManager.NavigateTo($"deliveries?farmerId={e.Item.Id}");
+    }
+
+    private Func<Farmer, object?> Filter(Func<Farmer, object?> selector)
+    {
+        return new Func<Farmer, object?>(selector);
+    }
 }

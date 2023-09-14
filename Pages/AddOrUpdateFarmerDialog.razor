@@ -1,15 +1,24 @@
-<MudDialog>
+
+<MudForm>
+  <MudDialog>
     <DialogContent>
-        <MudTextField T="string" Label="Name" @bind-Value="farmer.Name" />
-        <MudTextField T="int" Label="Age" @bind-Value="farmer.Age" />
-        <MudTextField T="string" Label="Location" @bind-Value="farmer.Location" Lines=1/>
+        
+            <MudTextField T="string" Label="@nameof(farmer.Name)" @bind-Value="farmer.Name" />
+            <MudDatePicker Label="@nameof(farmer.DateOfBirth)" @bind-Date="farmer.DateOfBirth" />
+            <MudSelect T="Gender" @bind-Value="farmer.Gender" @bind-SelectedOption="farmer.Gender" Label="@nameof(farmer.Gender)">
+                @foreach (Gender item in Enum.GetValues(typeof(Gender)))
+                {
+                    <MudSelectItem T="Gender" Value="@item">@item</MudSelectItem>
+                }
+            </MudSelect>
+            <MudTextField T="string" Label="@nameof(farmer.Location)" @bind-Value="farmer.Location" Lines=1 />
     </DialogContent>
     <DialogActions>
         <MudButton OnClick="Cancel">Cancel</MudButton>
         <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
     </DialogActions>
-</MudDialog>
-
+    </MudDialog>
+</MudForm>
 @code {
     [CascadingParameter] MudDialogInstance MudDialog { get; set; }
 

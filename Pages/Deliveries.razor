@@ -1,0 +1,139 @@
+﻿@inject AppDbContext _dbContext;
+@inject IDialogService _dialogService;
+
+@page "/deliveries"
+
+<div class="headings mb-2">
+    <h1>
+        @FarmerName Deliveries
+    </h1>
+    @if(FarmerId.HasValue)
+    {
+        <div class="position-absolute top-0 end-0">
+            <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary" @onclick="(e => AddDelivery(FarmerId.Value))">Add Delivery</MudButton>
+        </div>
+    }
+</div>
+
+<MudTable Items="@deliveries" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
+    <HeaderContent>
+        <MudTh>Nr</MudTh>
+        <MudTh>Date</MudTh>
+        <MudTh>Name</MudTh>
+        <MudTh>Quantity</MudTh>
+        <MudTh>Price</MudTh>
+        <MudTh>Amount</MudTh>
+        <MudTh>Actions</MudTh>
+    </HeaderContent>
+    <RowTemplate>
+        <MudTd DataLabel="Nr">@context.Id</MudTd>
+        <MudTd DataLabel="Date">@context.DeliveryDateTime.ToString("G")</MudTd>
+        <MudTd DataLabel="Name">@context.Farmer?.Name</MudTd>
+        <MudTd DataLabel="@nameof(context.Quantity)">@context.Quantity.ToString("N0")</MudTd>
+        <MudTd DataLabel="@nameof(context.Price)">UGX @context.Price.ToString("N0")</MudTd>
+        <MudTd DataLabel="@nameof(context.Amount)">
+            UGX @context.Amount.ToString("N0")
+        </MudTd>
+        <MudTd>
+            <MudGrid>
+                <MudItem>
+                    <MudIconButton Style="padding:0" Icon="@Icons.Filled.Edit" Color="Color.Primary" @onclick="(e => UpdateDelivery(context))" />
+                </MudItem>
+                <MudItem>
+                    <MudIconButton Style="padding:0" Icon="@Icons.Filled.Delete" Color="Color.Error" @onclick="(e => DeleteDelivery(context))" />
+                </MudItem>
+            </MudGrid>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+
+@code {
+    [Parameter, SupplyParameterFromQuery]
+    public int? FarmerId { get; set; }
+
+    string? FarmerName;
+
+    bool _loading = false;
+
+    List<Delivery> deliveries = new List<Delivery>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        _loading = true;
+
+        IQueryable<Delivery> query = _dbContext.Deliveries.Include(x => x.Farmer);
+
+        if (FarmerId.HasValue) query = query.Where(x => x.FarmerId == this.FarmerId);
+
+        deliveries = await query.ToListAsync();
+
+        if (FarmerId.HasValue)
+        {
+            FarmerName = await _dbContext.Farmer.Where(x => x.Id == FarmerId).Select(x => x.Name).FirstOrDefaultAsync();
+        }
+
+        _loading = false;
+    }
+
+    private async Task UpdateDelivery(Delivery delivery)
+    {
+        var paremeters = new DialogParameters();
+        paremeters.Add(nameof(Delivery), delivery);
+
+        var dialog = await OpenDialog<AddUpdateDeliveryDialog>("Update Delivery", paremeters);
+
+        if (dialog.Data != null)
+        {
+            Delivery updatedDelivery = dialog.Data as Delivery;
+            _dbContext.Deliveries.Update(updatedDelivery);
+
+            await _dbContext.SaveChangesAsync();
+        }
+    }
+
+    private async Task DeleteDelivery(Delivery delivery)
+    {
+        bool? result = await _dialogService.ShowMessageBox("Delete Confirmation",
+            "Deleting can not be undone!", yesText: "Delete!", cancelText: "Cancel");
+
+        if (result ?? false)
+        {
+            await _dbContext.Deliveries.Where(x => x.Id == delivery.Id).ExecuteDeleteAsync();
+            //await _dbContext.SaveChangesAsync();
+
+            deliveries.Remove(delivery);
+        }
+    }
+
+    private async Task<DialogResult> OpenDialog<T>(string title, DialogParameters? parameters) where T : ComponentBase
+    {
+        var dialog = await _dialogService.Show<T>(title, parameters).Result;
+
+        return dialog;
+    }
+
+
+    private async Task AddDelivery(int farmerId)
+    {
+        var paremeters = new DialogParameters();
+        paremeters.Add(nameof(Delivery), new Delivery
+            {
+                FarmerId = farmerId
+            });
+
+        var dialog = await OpenDialog<AddUpdateDeliveryDialog>("Add Delivery", paremeters);
+
+        if (dialog.Data != null)
+        {
+            Delivery delivery = dialog.Data as Delivery;
+            _dbContext.Deliveries.Add(delivery);
+
+            await _dbContext.SaveChangesAsync();
+
+            deliveries.Add(delivery);
+        }
+
+    }
+}

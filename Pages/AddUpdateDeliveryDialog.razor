@@ -1,0 +1,84 @@
+﻿@using System.Globalization;
+
+<MudForm>
+    <MudDialog>
+        <DialogContent>
+           <MudGrid>
+               <MudItem xs="12" md="6">
+                    <MudNumericField 
+                        HideSpinButtons="true" 
+                        Value="@delivery.Quantity" 
+                        ValueChanged="OnQuantityChanged" 
+                        T="double" 
+                        Culture="@_en" 
+                        Format="N0" 
+                        Label="@nameof(delivery.Quantity)" />
+                </MudItem>
+
+                <MudItem xs="12" md="6">
+                    <MudNumericField 
+                        HideSpinButtons="true" 
+                        Value="@delivery.Price" 
+                        ValueChanged="OnPriceChanged" 
+                        T="double" Culture="@_en" 
+                        Format="N0" 
+                        Label="@nameof(delivery.Price)"  
+                        HelperText="Unit Price" 
+                        Adornment="Adornment.Start" AdornmentText="UGX "/>
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudDatePicker Label="@nameof(delivery.DeliveryDateTime)" @bind-Date="deliveryDate" Required="true"
+                        IsDateDisabledFunc="@((DateTime dt) => dt > DateTime.Today)"/>
+                </MudItem>
+                <MudItem xs="12">                    
+                    <MudText HideSpinButtons="true" Culture="@_en" Label="@nameof(delivery.Amount)"ReadOnly="true">Amount </MudText>
+                    <MudText Typo="Typo.h4" HideSpinButtons="true" T="double" Culture="@_en" Label="@nameof(delivery.Amount)">UGX @(delivery.Amount.ToString("N0"))</MudText>
+                </MudItem>
+           </MudGrid>
+        </DialogContent>
+        <DialogActions>
+            <MudButton OnClick="Cancel">Cancel</MudButton>
+            <MudButton Color="Color.Primary" OnClick="Submit">Ok</MudButton>
+        </DialogActions>
+    </MudDialog>
+</MudForm>
+
+    @code {
+    [CascadingParameter] MudDialogInstance MudDialog { get; set; }
+
+    [Parameter] public Delivery delivery { get; set; } = new Delivery();
+
+    DateTime? deliveryDate = DateTime.Now;
+
+    public CultureInfo _en = CultureInfo.GetCultureInfo("en-US");
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+
+    private void Submit()
+    {
+        delivery.DeliveryDateTime = deliveryDate.Value;
+
+        MudDialog.Close(DialogResult.Ok<Delivery>(delivery));
+    }
+
+    protected void OnPriceChanged(double value)
+    {
+        delivery.Price = value;
+
+        UpdateAmount();
+    }
+
+
+    protected void OnQuantityChanged(double value)
+    {
+        delivery.Quantity = value;
+
+        UpdateAmount();
+    }
+
+    private void UpdateAmount() => delivery.Amount = delivery.Quantity * delivery.Price;
+}
