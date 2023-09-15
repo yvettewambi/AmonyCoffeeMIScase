@@ -3,49 +3,67 @@
 
 @page "/deliveries"
 
-<div class="headings mb-2">
-    <h1>
-        @FarmerName Deliveries
-    </h1>
-    @if(FarmerId.HasValue)
-    {
-        <div class="position-absolute top-0 end-0">
-            <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary" @onclick="(e => AddDelivery(FarmerId.Value))">Add Delivery</MudButton>
-        </div>
-    }
-</div>
+<PageTitle>Deliveries</PageTitle>
 
-<MudTable Items="@deliveries" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info">
-    <HeaderContent>
-        <MudTh>Nr</MudTh>
-        <MudTh>Date</MudTh>
-        <MudTh>Name</MudTh>
-        <MudTh>Quantity</MudTh>
-        <MudTh>Price</MudTh>
-        <MudTh>Amount</MudTh>
-        <MudTh>Actions</MudTh>
-    </HeaderContent>
-    <RowTemplate>
-        <MudTd DataLabel="Nr">@context.Id</MudTd>
-        <MudTd DataLabel="Date">@context.DeliveryDateTime.ToString("G")</MudTd>
-        <MudTd DataLabel="Name">@context.Farmer?.Name</MudTd>
-        <MudTd DataLabel="@nameof(context.Quantity)">@context.Quantity.ToString("N0")</MudTd>
-        <MudTd DataLabel="@nameof(context.Price)">UGX @context.Price.ToString("N0")</MudTd>
-        <MudTd DataLabel="@nameof(context.Amount)">
-            UGX @context.Amount.ToString("N0")
-        </MudTd>
-        <MudTd>
-            <MudGrid>
-                <MudItem>
-                    <MudIconButton Style="padding:0" Icon="@Icons.Filled.Edit" Color="Color.Primary" @onclick="(e => UpdateDelivery(context))" />
-                </MudItem>
-                <MudItem>
-                    <MudIconButton Style="padding:0" Icon="@Icons.Filled.Delete" Color="Color.Error" @onclick="(e => DeleteDelivery(context))" />
-                </MudItem>
-            </MudGrid>
-        </MudTd>
-    </RowTemplate>
-</MudTable>
+<MudPaper Class="pa-1 my-2" Elevation="0">
+    <div class="headings mb-2 d-flex" Style="Width: 100%">
+        <MudText Typo="Typo.h4">
+            @FarmerName Deliveries
+        </MudText>
+        
+        @if (FarmerId.HasValue)
+        {
+            <MudSpacer />
+            <MudItem>
+                <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary" @onclick="(e => AddDelivery(FarmerId.Value))">Add Delivery</MudButton>
+            </MudItem>
+        }
+    </div>
+
+    <MudTable Items="@deliveries" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_loading" LoadingProgressColor="Color.Info"
+              ServerData="@(new Func<TableState, Task<TableData<Delivery>>>(ServerReload))">
+        <HeaderContent>
+            <MudTh>Id</MudTh>
+            <MudTh>Date</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh>Quantity</MudTh>
+            <MudTh>Price</MudTh>
+            <MudTh>Amount</MudTh>
+            <MudTh>Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Id">@context.Id</MudTd>
+            <MudTd DataLabel="Date">@context.DeliveryDateTime.ToString("d")</MudTd>
+            <MudTd DataLabel="Name">@context.Farmer?.Name</MudTd>
+            <MudTd DataLabel="@nameof(context.Quantity)">@context.Quantity.ToString("N0")</MudTd>
+            <MudTd DataLabel="@nameof(context.Price)">UGX @context.Price.ToString("N0")</MudTd>
+            <MudTd DataLabel="@nameof(context.Amount)">
+                UGX @context.Amount.ToString("N0")
+            </MudTd>
+            <MudTd>
+                <MudGrid>
+                    <MudItem>
+                        <MudIconButton Class="p-0" Icon="@Icons.Filled.Edit" Color="Color.Primary" Size="Size.Small" @onclick="(e => UpdateDelivery(context))" />
+                    </MudItem>
+                    <MudItem>
+                        <MudIconButton Class="p-0" Icon="@Icons.Filled.Delete" Color="Color.Error" Size="Size.Small" @onclick="(e => DeleteDelivery(context))" />
+                    </MudItem>
+                </MudGrid>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText>No Deliveries found.</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Loading...</MudText>
+        </LoadingContent>
+        <PagerContent>
+            <MudTablePager />
+        </PagerContent>
+    </MudTable>
+</MudPaper>
+
+
 
 @code {
     [Parameter, SupplyParameterFromQuery]
@@ -55,26 +73,30 @@
 
     bool _loading = false;
 
+    private int totalItems;
+
     List<Delivery> deliveries = new List<Delivery>();
 
-    protected override async Task OnInitializedAsync()
+    private async Task<TableData<Delivery>> ServerReload(TableState state)
     {
-        await base.OnInitializedAsync();
+        var query = DeliveryQuery();
 
-        _loading = true;
+        deliveries = await query.Skip(state.PageSize * state.Page).Take(state.PageSize).ToListAsync();
 
+        return new TableData<Delivery>
+        {
+            TotalItems = await query.CountAsync(),
+            Items = deliveries
+        };
+    }
+
+    private IQueryable<Delivery> DeliveryQuery()
+    {
         IQueryable<Delivery> query = _dbContext.Deliveries.Include(x => x.Farmer);
 
         if (FarmerId.HasValue) query = query.Where(x => x.FarmerId == this.FarmerId);
 
-        deliveries = await query.ToListAsync();
-
-        if (FarmerId.HasValue)
-        {
-            FarmerName = await _dbContext.Farmer.Where(x => x.Id == FarmerId).Select(x => x.Name).FirstOrDefaultAsync();
-        }
-
-        _loading = false;
+        return query;
     }
 
     private async Task UpdateDelivery(Delivery delivery)

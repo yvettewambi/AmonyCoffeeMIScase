@@ -7,18 +7,23 @@
 
 <MudPaper Class="pa-1 my-2" Elevation="0">
     
-
-    <div class="headings mb-2">
-        <h1>
+    <div class="headings mb-2 d-flex" Style="Width: 100%">
+        <MudText Typo="Typo.h4">
             Farmers
-        </h1>
-        <div class="position-absolute top-0 end-0">
+        </MudText>
+        <MudSpacer />
+        <MudItem>
             <MudButton StartIcon="@Icons.Material.Filled.Add" Variant="Variant.Filled" Color="Color.Primary" @onclick="(e => CreateAsync())">Add Farmer</MudButton>
-        </div>
+        </MudItem>
     </div>
 
-    <MudTable Items="@allFarmers" Hover="true" Bordered="true" Virtualize="true" AllowUnsorted="false"
-              HorizontalScrollbar="true" OnRowClick="RowClickEvent" T="Farmer">
+    <MudTable Items="@farmers" Hover="true" Bordered="true" Virtualize="true" AllowUnsorted="false"
+              HorizontalScrollbar="true" OnRowClick="RowClickEvent" T="Farmer"
+              ServerData="@(new Func<TableState, Task<TableData<Farmer>>>(ServerReload))" @ref="_table">
+        <ToolBarContent>
+            <MudTextField T="string" ValueChanged="@(s=>OnSearch(s))" Placeholder="Search farmer name" Adornment="Adornment.Start"
+                          AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+        </ToolBarContent>
         <HeaderContent>
             <MudTh>
                 <MudTableSortLabel SortBy="Filter(m => m.Id)">Farmer Id</MudTableSortLabel>
@@ -50,34 +55,62 @@
             <MudTd DataLabel="Actions">
                 <MudGrid>
                     <MudItem>
-                        <MudIconButton Style="padding:0" Icon="@Icons.Filled.AddShoppingCart" Color="Color.Secondary" @onclick="(e => AddDelivery(context.Id))" />
+                        <MudIconButton Class="p-0" Icon="@Icons.Filled.AddShoppingCart" Size="Size.Small" Color="Color.Secondary" @onclick="(e => AddDelivery(context.Id))" />
                     </MudItem>
                     <MudItem>
-                        <MudIconButton Style="padding:0" Icon="@Icons.Filled.Edit" Color="Color.Primary" @onclick="(e => UpdateAsync(context.Id))" />
+                        <MudIconButton Class="p-0" Icon="@Icons.Filled.Edit" Size="Size.Small" Color="Color.Primary" @onclick="(e => UpdateAsync(context.Id))" />
                     </MudItem>
                     <MudItem>
-                        <MudIconButton Style="padding:0" Icon="@Icons.Filled.Delete" Color="Color.Error" @onclick="(e => DeleteAsync(context.Id))" />
+                        <MudIconButton Class="p-0" Icon="@Icons.Filled.Delete" Size="Size.Small" Color="Color.Error" @onclick="(e => DeleteAsync(context.Id))" />
                     </MudItem>
                 </MudGrid>
             </MudTd>
         </RowTemplate>
+        <NoRecordsContent>
+            <MudText>No Farmers found.</MudText>
+        </NoRecordsContent>
+        <LoadingContent>
+            <MudText>Loading...</MudText>
+        </LoadingContent>
         <PagerContent>
             <MudTablePager PageSizeOptions="new int[] { 5, 10, 25, 100 }" />
         </PagerContent>
     </MudTable>
 
-    @* <MudFab Color="Color.Secondary" Icon="@Icons.Filled.Add" class="object-right-bottom" Size="Size.Medium" /> *@
 </MudPaper>
     
 
 
 @code {
-    List<Farmer> allFarmers = new List<Farmer>();
+    List<Farmer> farmers = new List<Farmer>();
 
+    private MudTable<Farmer> _table;
+    private string searchString = null;
+    private int totalItems;
 
-    protected override async Task OnInitializedAsync()
+    private async Task<TableData<Farmer>> ServerReload(TableState state)
     {
-        allFarmers = await _dbContext.Farmer.ToListAsync();
+        IQueryable<Farmer> query = _dbContext.Farmer;
+
+        if (!string.IsNullOrEmpty(searchString))
+        {
+            query = query.Where(x => EF.Functions.Like(x.Name, $"%{searchString}%"));
+        }
+
+        farmers = await query.Skip(state.PageSize * state.Page).Take(state.PageSize).ToListAsync();
+        totalItems = await query.CountAsync();
+        return new TableData<Farmer>
+        {
+            TotalItems = totalItems,
+            Items = farmers
+        };
+    }
+
+
+    private void OnSearch(string text)
+    {
+        searchString = text;
+        _table.ReloadServerData();
     }
 
     private async Task CreateAsync()
@@ -93,14 +126,14 @@
             await _dbContext.SaveChangesAsync();
 
 
-            allFarmers.Insert(0, newFarmer);
+            farmers.Insert(0, newFarmer);
         }
     }
 
     private async Task UpdateAsync(int id)
     {
         var parameters = new DialogParameters();
-        var farmerNeedToUpdate = allFarmers.FirstOrDefault(_ => _.Id == id);
+        var farmerNeedToUpdate = farmers.FirstOrDefault(_ => _.Id == id);
         parameters.Add("farmer", farmerNeedToUpdate);
         var dialog = await OpenDialog<AddOrUpdateFarmerDialog>("Update Farmer", parameters); // _dialogService.Show<AddOrUpdateFarmerDialog>("Update A Item", parameters).Result;
         if (dialog.Data != null)
@@ -109,8 +142,8 @@
             _dbContext.Farmer.Update(updatedFarmer);
             await _dbContext.SaveChangesAsync();
 
-            allFarmers.Remove(farmerNeedToUpdate);
-            allFarmers.Insert(0, updatedFarmer);
+            farmers.Remove(farmerNeedToUpdate);
+            farmers.Insert(0, updatedFarmer);
         }
     }
 
@@ -125,7 +158,7 @@
             _dbContext.Farmer.Remove(farmerToRemove);
             await _dbContext.SaveChangesAsync();
 
-            allFarmers.Remove(farmerToRemove);
+            farmers.Remove(farmerToRemove);
         }
     }
 
