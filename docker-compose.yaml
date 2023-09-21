@@ -1,0 +1,18 @@
+version: '3.4'
+
+services:
+  amonycoffeemis:
+    image: ematademo.azurecr.io/amonycoffeemis
+    ports:
+      - "8080:80"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./Data.db:/Data.db
+
+  database:
+    image: keinos/sqlite3
+    stdin_open: true
+    volumes:
+      - ./Data.db:/Data.db
