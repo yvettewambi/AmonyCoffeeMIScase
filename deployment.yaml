@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: amonycoffeemis
-        image: ematademo.azurecr.io/amonycoffeemis
+        image: ematademo/amonycoffeemis
         ports:
         - containerPort: 80
         - containerPort: 443
