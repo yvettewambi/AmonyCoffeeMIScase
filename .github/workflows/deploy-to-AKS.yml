@@ -35,11 +35,11 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_CONTAINER_REGISTRY: ""
-  CONTAINER_NAME: "your-container-name"
-  RESOURCE_GROUP: "your-resource-group"
-  CLUSTER_NAME: "your-cluster-name"
-  DEPLOYMENT_MANIFEST_PATH: "your-deployment-manifest-path"
+  AZURE_CONTAINER_REGISTRY: "ematademo"
+  CONTAINER_NAME: "amonycoffeemis"
+  RESOURCE_GROUP: "emata-infrastructure"
+  CLUSTER_NAME: "emata-k8s"
+  DEPLOYMENT_MANIFEST_PATH: "./deployment.yaml"
 
 jobs:
   buildImage:
@@ -55,9 +55,7 @@ jobs:
       - name: Azure login
         uses: azure/login@v1.4.6
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
 
       # Builds and pushes an image up to your Azure Container Registry
       - name: Build and push image to ACR
@@ -79,9 +77,7 @@ jobs:
       - name: Azure login
         uses: azure/login@v1.4.6
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
 
       # Use kubelogin to configure your kubeconfig for Azure auth
       - name: Set up kubelogin for non-interactive login
