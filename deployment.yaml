@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: amonycoffeemis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: amonycoffeemis
+  template:
+    metadata:
+      labels:
+        app: amonycoffeemis
+    spec:
+      containers:
+      - name: amonycoffeemis
+        image: ematademo.azurecr.io/amonycoffeemis
+        ports:
+        - containerPort: 80
+        - containerPort: 443
