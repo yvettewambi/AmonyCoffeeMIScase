@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: amonycoffeemis
-        image: ematademo/amonycoffeemis
+        image: yvevy/amonycoffeemis
         ports:
         - containerPort: 80
         - containerPort: 443
