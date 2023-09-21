@@ -13,6 +13,5 @@ services:
 
   database:
     image: keinos/sqlite3
-    stdin_open: true
     volumes:
       - ./Data.db:/Data.db
