@@ -35,7 +35,7 @@ Run the app:
 
 Access the application on this URL: https://localhost:7208/
 
-**How to build and run the application using Docker**
+**To build and run the application using Docker**
 
 1. Clone/Fork the Repo.
 
